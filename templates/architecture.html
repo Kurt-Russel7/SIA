@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui with context %}
+
+{% block content %}
+{{ ui.page_head(copy, 'architecture') }}
+
+<div class="stack">
+  {{ ui.chips(views, view, 'architecture', 'view') }}
+
+  {% if view == "Architecture layers" %}
+  <div class="stack-sm">
+    {% for name, title, detail, color in layers %}
+    <section class="card layer">
+      <span class="layer-bar bg-{{ color }}"></span>
+      <div class="layer-body">
+        <span class="layer-name">{{ name }}</span>
+        <div class="layer-text">
+          <p class="strong">{{ title }}</p>
+          <p class="layer-detail">{{ detail }}</p>
+        </div>
+        <span class="layer-num">0{{ loop.index }}</span>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+
+  {% elif view == "Zachman matrix" %}
+  <section class="card card-pad-lg table-scroll">
+    <div class="zachman">
+      {% for column in z_columns %}<div class="z-head">{{ column }}</div>{% endfor %}
+      {% for row in z_rows %}
+        {% set r = loop.index0 %}
+        {% for column in z_columns %}
+        <div class="z-cell">
+          <p class="z-row">{{ row }}</p>
+          <p class="z-text">{{ z_cells[r][loop.index0] }}</p>
+        </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </section>
+
+  {% else %}
+  <section class="card card-pad-lg">
+    <div class="togaf">
+      {% for phase in phases %}
+      {% set i = loop.index0 %}
+      <div class="togaf-phase">
+        <span class="togaf-num">Phase {{ i }}</span>
+        <p class="togaf-name">{{ phase }}</p>
+        <p class="togaf-status">{{ "Completed" if i < 2 else ("In progress" if i < 5 else "Planned") }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

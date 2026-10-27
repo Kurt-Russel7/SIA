@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui with context %}
+
+{% block content %}
+{{ ui.page_head(copy, 'roadmap') }}
+
+<div class="stack">
+  <div class="grid-3">
+    {{ ui.metric_card({"title": "Active initiatives", "value": items | length, "trend": none, "positive": true,
+                       "accent": "sky", "note": "Across " ~ owners ~ " teams"}) }}
+    {{ ui.metric_card({"title": "Passengers reached", "value": "{:,}".format(reach), "trend": none, "positive": true,
+                       "accent": "violet",
+                       "note": "%.1f%% rated a targeted touchpoint 1–2" | format(reach / total * 100 if total else 0)}) }}
+    {{ ui.metric_card({"title": "Roadmap progress", "value": progress ~ "%", "trend": none, "positive": true,
+                       "accent": "amber", "note": done ~ " of " ~ (items | length) ~ " initiatives completed"}) }}
+  </div>
+
+  <section class="card card-clip">
+    <div class="card-pad-lg card-divider">
+      <h2 class="card-title">Prioritized initiatives</h2>
+      <p class="card-sub">Generated from the four largest service gaps. Select an initiative to mark it complete.
+        Potential lift is an upper-bound estimate of the rise in overall satisfaction.</p>
+    </div>
+    <div class="initiatives">
+      {% for i in items %}
+      {% set is_done = i.key in completed %}
+      <form method="post" action="{{ url_for('toggle_initiative') }}">
+        <input type="hidden" name="key" value="{{ i.key }}">
+        <button type="submit" class="initiative" aria-pressed="{{ 'true' if is_done else 'false' }}">
+          <span class="check{% if is_done %} done{% endif %}">{{ "✓" if is_done else "" }}</span>
+          <span class="initiative-name{% if is_done %} done{% endif %}">{{ i.name }}<small>{{ i.touchpoint }}</small></span>
+          <span class="muted small">{{ i.owner }}</span>
+          <span class="semibold small">{{ i.timing }}</span>
+          <span class="pill pill-sm {{ 'pill-rose' if i.priority == 'High' else 'pill-amber' }}">{{ i.priority }}</span>
+          <span class="text-emerald strong" title="Potential lift in overall satisfaction">{{ fmt_pts(i.lift) }}</span>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

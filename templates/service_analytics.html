@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui with context %}
+
+{% block content %}
+{{ ui.page_head(copy, 'services') }}
+
+<div class="stack">
+  {{ ui.chips(filters, selected, 'service_analytics', 'filter') }}
+
+  <div class="grid-3">
+    {% for m in sv.metrics %}{{ ui.metric_card(m) }}{% endfor %}
+  </div>
+
+  <section class="card card-clip">
+    <div class="card-pad-lg card-divider">
+      <h2 class="card-title">Touchpoint performance</h2>
+      <p class="card-sub">{{ "{:,}".format(sv.count) }} passengers · ranked by average rating.
+        “Satisfaction gap” is how much more often passengers who rate it 4–5 are satisfied than those who rate it 1–2.</p>
+    </div>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr><th>Touchpoint</th><th>Journey area</th><th>Avg rating</th><th>Rated 4–5</th><th>Satisfaction gap</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for t in sv.rows %}
+          {% set pill = 'pill-rose' if t.status == 'At risk' else ('pill-amber' if t.status == 'Watch' else ('pill-sky' if t.status == 'Stable' else 'pill-emerald')) %}
+          <tr>
+            <td class="strong">{{ t.label }}</td>
+            <td class="muted">{{ t.area }}</td>
+            <td class="strong">{{ "%.2f"|format(t.mean) }} / 5</td>
+            <td>{{ fmt_pct(t.share_high, 0) }}</td>
+            <td class="{{ 'text-rose' if t.gap_pts is not none and t.gap_pts < 0 else 'text-emerald' }} semibold">{{ fmt_pts(t.gap_pts) }}</td>
+            <td><span class="pill pill-sm {{ pill }}">{{ t.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

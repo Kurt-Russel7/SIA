@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui with context %}
+
+{% block content %}
+<div class="page-head page-head-xl">
+  <div>
+    <div class="eyebrow"><span class="live-dot"></span> Live passenger data</div>
+    <h1 class="page-title">Passenger experience overview</h1>
+    <p class="page-sub">Monitor satisfaction, uncover service gaps, and turn passenger feedback into better journeys.</p>
+  </div>
+  <div class="page-actions">
+    <div class="segmented" role="group" aria-label="Cabin class">
+      {% for item in classes %}
+      <a href="{{ url_for('overview', cls=item) }}"
+         class="seg-btn{% if item == cls %} active{% endif %}"
+         {% if item == cls %}aria-current="true"{% endif %}>{{ item }}</a>
+      {% endfor %}
+    </div>
+    <a class="btn btn-outline" href="{{ url_for('data_workspace') }}">{{ icon('database', 17) }} {{ "{:,}".format(meta.rows) }} records</a>
+  </div>
+</div>
+
+<div class="grid-metrics">
+  {% for m in ov.metrics %}{{ ui.metric_card(m) }}{% endfor %}
+</div>
+
+<div class="grid-overview">
+  <!-- Satisfaction by age group -->
+  <section class="card card-pad">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Satisfaction by age group</h2>
+        <p class="card-sub">Share of passengers satisfied, by travel type{% if cls != "All classes" %} · {{ cls }}{% endif %}</p>
+      </div>
+      <div class="chart-legend">
+        <span><i class="dot dot-sky"></i> Business</span>
+        <span><i class="dot dot-violet-light"></i> Personal</span>
+      </div>
+    </div>
+    <div class="line-chart">
+      <div class="chart-y" aria-hidden="true">
+        {% for y in chart.y_labels %}<span style="top: {{ y.top | round(3) }}%">{{ y.text }}</span>{% endfor %}
+      </div>
+      <div class="chart-plot">
+        <svg viewBox="0 0 700 250" preserveAspectRatio="none" role="img"
+             aria-label="Line chart of satisfaction rate by age group for business and personal travel">
+          <defs>
+            <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgb(14 165 233)" stop-opacity=".22"/>
+              <stop offset="100%" stop-color="rgb(14 165 233)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          {% for y in chart.gridlines %}
+          <line x1="{{ chart.x0 }}" x2="{{ chart.x1 }}" y1="{{ y }}" y2="{{ y }}" stroke="rgb(226 232 240)" stroke-dasharray="4 5" vector-effect="non-scaling-stroke"/>
+          {% endfor %}
+          {% set biz = chart.series.get("Business") %}
+          {% set per = chart.series.get("Personal") %}
+          {% if biz %}<path d="{{ biz.area }}" fill="url(#area)"/>{% endif %}
+          {% if per %}<path d="{{ per.line }}" fill="none" stroke="rgb(167 139 250)" stroke-width="3" stroke-linecap="round" stroke-dasharray="7 7" vector-effect="non-scaling-stroke"/>{% endif %}
+          {% if biz %}<path d="{{ biz.line }}" fill="none" stroke="rgb(14 165 233)" stroke-width="4" stroke-linecap="round" vector-effect="non-scaling-stroke"/>{% endif %}
+        </svg>
+        {% for name, s in chart.series.items() %}
+          {% for p in s.points %}
+          <span class="chart-point {{ 'point-sky' if name == 'Business' else 'point-violet' }}"
+                style="left: {{ p.left | round(3) }}%; top: {{ p.top | round(3) }}%" title="{{ p.title }}"></span>
+          {% endfor %}
+        {% endfor %}
+      </div>
+      <div class="chart-labels" aria-hidden="true">
+        {% for x in chart.x_labels %}<span style="left: {{ x.left | round(3) }}%">{{ x.text }}</span>{% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- Satisfaction split -->
+  <section class="card card-pad">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Satisfaction split</h2>
+        <p class="card-sub">Passenger survey outcome</p>
+      </div>
+      <a class="ghost-btn" href="{{ url_for('passenger_segments') }}" aria-label="View segments">{{ icon('chevron') }}</a>
+    </div>
+    <div class="split">
+      <div class="donut">
+        <svg viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="48" fill="none" stroke="rgb(241 245 249)" stroke-width="14"/>
+          {% for s in donut %}
+          <circle cx="60" cy="60" r="48" fill="none" stroke="{{ s.color }}" stroke-width="14"
+                  stroke-dasharray="{{ s.dash }}" stroke-dashoffset="{{ s.offset }}" stroke-linecap="round"/>
+          {% endfor %}
+        </svg>
+        <div class="donut-center">
+          <span class="donut-value">{{ fmt_pct(ov.split[0].pct) }}</span>
+          <span class="donut-label">satisfied</span>
+        </div>
+      </div>
+      <div class="legend">
+        {% for p in ov.split %}
+        <div class="legend-row">
+          <span class="dot dot-{{ p.dot }}"></span>
+          <div class="legend-text">
+            <p class="legend-label">{{ p.label }}</p>
+            <p class="legend-count">{{ "{:,}".format(p.count) }} passengers</p>
+          </div>
+          <span class="legend-value">{{ fmt_pct(p.pct) }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- Service quality -->
+  <section class="card card-pad">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Service quality performance</h2>
+        <p class="card-sub">Highest and lowest average ratings (1–5)</p>
+      </div>
+      <a class="link-btn" href="{{ url_for('service_analytics') }}">View all services</a>
+    </div>
+    <div class="bars">
+      {% for s in ov.bars %}
+      {% if loop.index == 4 %}<div class="bars-divider"><span>Lowest rated</span></div>{% endif %}
+      <div>
+        <div class="bar-head">
+          <span class="bar-name">{{ s.label }}</span>
+          <span class="bar-value">{{ "%.2f"|format(s.mean) }}<span> / 5</span></span>
+        </div>
+        <div class="bar-track"><div class="bar-fill bg-{{ s.color }}" style="width: {{ (s.mean / 5 * 100) | round(1) }}%"></div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Priority insight -->
+  {% set t = ov.insight %}
+  <section class="card card-clip">
+    <div class="card-pad card-divider">
+      <div class="card-head card-head-tight">
+        <div>
+          <h2 class="card-title">Priority insight</h2>
+          <p class="card-sub">Highest-impact improvement opportunity</p>
+        </div>
+        <span class="pill pill-rose">High priority</span>
+      </div>
+    </div>
+    <div class="card-pad">
+      <div class="insight-icon">{{ icon('sparkles', 24) }}</div>
+      {% if t %}
+      <h3 class="insight-title">Improve {{ t.label }}</h3>
+      <p class="insight-text">Passengers who rate {{ t.label }} 1–2 are
+        <strong>{{ "%.1f"|format(t.ratio) }}× more likely</strong> to be neutral or dissatisfied than
+        those who rate it 4–5. Average rating: {{ "%.2f"|format(t.mean) }} / 5.</p>
+      <div class="mini-stats">
+        <div class="mini-stat" title="If passengers who rated it 1–2 were as satisfied as those who rated it 4–5">
+          <p>Potential lift</p><p class="text-emerald">up to {{ fmt_pts(t.opportunity) }}</p></div>
+        <div class="mini-stat"><p>Passengers rating 1–2</p><p>{{ "{:,}".format(t.n_low) }}</p></div>
+      </div>
+      <a class="btn btn-primary btn-block" href="{{ url_for('roadmap') }}">
+        {{ ov.initiative.name if ov.initiative else "Explore recommendation" }} {{ icon('chevron', 16) }}</a>
+      {% else %}
+      <p class="insight-text">Not enough data in this selection to rank opportunities.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

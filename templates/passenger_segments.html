@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui with context %}
+
+{% block content %}
+{{ ui.page_head(copy, 'segments') }}
+{% set current = sg.current %}
+
+<div class="grid-segments">
+  <div class="segment-list">
+    {% for s in sg.cards %}
+    {% set is_sel = s.name == current.name %}
+    <a href="{{ url_for('passenger_segments', segment=s.name) }}"
+       class="segment{% if is_sel %} active{% endif %}" {% if is_sel %}aria-current="true"{% endif %}>
+      <div class="segment-row">
+        <span class="dot dot-lg dot-{{ s.color }}"></span>
+        <span class="segment-name">{{ s.name }}</span>
+        <span class="segment-sat">{{ fmt_pct(s.satisfaction) }}</span>
+      </div>
+      <p class="segment-count">{{ "{:,}".format(s.count) }} passengers</p>
+    </a>
+    {% endfor %}
+  </div>
+
+  <section class="card card-pad-xl">
+    <div class="segment-head">
+      <div>
+        <p class="eyebrow-sm">Selected segment</p>
+        <h2 class="segment-title">{{ current.name }}</h2>
+        <p class="segment-desc">{{ current.description }}</p>
+      </div>
+      <span class="sat-badge"><b>{{ fmt_pct(current.satisfaction) }}</b><small>satisfied</small></span>
+    </div>
+
+    <div class="grid-3 mt-8">
+      {% for label, value in [("Segment size", "{:,}".format(current.count)),
+                              ("Avg. rating", "—" if current.avg_rating is none else "%.2f / 5" | format(current.avg_rating)),
+                              ("Loyal customers", fmt_pct(current.loyalty))] %}
+      <div class="mini-stat"><p>{{ label }}</p><p class="mini-stat-lg">{{ value }}</p></div>
+      {% endfor %}
+    </div>
+
+    <h3 class="drivers-title">Top experience drivers</h3>
+    <p class="drivers-sub">Satisfaction gap: passengers rating each touchpoint 4–5 vs. <span class="nowrap">1–2</span></p>
+    <div class="drivers">
+      {% for t in sg.drivers %}
+      <div>
+        <div class="driver-head"><span>{{ t.label }}</span><span>{{ fmt_pts(t.gap_pts) }}</span></div>
+        <div class="bar-track bar-thin"><div class="bar-fill bg-sky" style="width: {{ [t.gap_pts, 0] | max | round(1) }}%"></div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

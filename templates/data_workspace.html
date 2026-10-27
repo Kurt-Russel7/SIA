@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui with context %}
+
+{% block content %}
+{{ ui.page_head(copy, 'data') }}
+
+<div class="grid-data">
+  <section class="card card-pad-lg">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Dataset pipeline</h2>
+        <p class="card-sub">Airline passenger satisfaction survey · {{ dw.files | join(", ") }}</p>
+      </div>
+      <span class="pill pill-emerald">Healthy</span>
+    </div>
+    <div class="pipeline">
+      {% for name, detail, status in dw.pipeline %}
+      <div class="pipeline-step">
+        <span class="step-num">{{ loop.index }}</span>
+        <div class="step-text">
+          <p class="step-name">{{ name }}</p>
+          <p class="step-detail">{{ detail }}</p>
+        </div>
+        <span class="pill pill-sm {{ 'pill-sky' if status == 'Live' else ('pill-amber' if status == 'Watch' else 'pill-emerald') }}">{{ status }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="stack">
+    <section class="card card-pad-lg">
+      <h2 class="card-title">Import new data</h2>
+      <p class="card-sub">Upload a CSV with the same columns to recalculate every dashboard.</p>
+      <form class="dropzone" method="post" action="{{ url_for('import_data') }}" enctype="multipart/form-data" id="import-form">
+        <div class="dropzone-icon">{{ icon('upload') }}</div>
+        <p class="dropzone-title" id="dropzone-title">Upload passenger dataset</p>
+        <p class="dropzone-hint">CSV up to 50 MB · drag a file here or choose one</p>
+        <fieldset class="mode">
+          <legend class="sr-only">Import mode</legend>
+          <label><input type="radio" name="mode" value="append" checked> Add to current data</label>
+          <label><input type="radio" name="mode" value="replace"> Replace current data</label>
+        </fieldset>
+        <label class="btn btn-primary dropzone-btn">
+          <input type="file" name="dataset" accept=".csv,text/csv" id="dataset-input" class="sr-only">
+          <span id="dropzone-btn-text">Choose CSV file</span>
+        </label>
+      </form>
+      <details class="schema">
+        <summary>Required columns ({{ required | length }})</summary>
+        <p>{{ required | join(" · ") }}</p>
+        <p>Ratings are 0–5 (0 = not applicable). <code>satisfaction</code> is “satisfied” or “neutral or dissatisfied”.</p>
+      </details>
+      {% if not dw.is_default %}
+      <form method="post" action="{{ url_for('reset_data') }}" class="reset-form">
+        <button type="submit" class="link-btn">Restore original dataset</button>
+      </form>
+      {% endif %}
+    </section>
+
+    <section class="card stats-row">
+      {% for value, label in dw.stats %}
+      <div><p class="stat-value">{{ value }}</p><p class="stat-label">{{ label }}</p></div>
+      {% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

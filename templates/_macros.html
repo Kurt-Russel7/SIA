@@ -1,0 +1,44 @@
+{# Reusable UI pieces. Import with: {% import "_macros.html" as ui with context %} #}
+
+{% macro metric_card(m) %}
+<section class="card metric">
+    <div class="metric-body">
+    <p class="metric-title">{{ m.title }}</p>
+    <div class="metric-row">
+      <p class="metric-value">{{ m.value }}</p>
+      {% if m.trend %}
+      <span class="trend {{ 'trend-up' if m.positive else 'trend-down' }}">
+        {% if m.trend.startswith('-') or m.trend.startswith('+') %}{{ icon('arrowDown' if m.trend.startswith('-') else 'arrowUp', 13) }}{% endif %}{{ m.trend }}
+      </span>
+      {% endif %}
+    </div>
+    <p class="metric-note">{{ m.note }}</p>
+  </div>
+</section>
+{% endmacro %}
+
+{% macro page_head(copy, export_key) %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">{{ copy.eyebrow }}</div>
+    <h1 class="page-title">{{ copy.title }}</h1>
+    <p class="page-sub">{{ copy.description }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-outline" href="{{ url_for('export_view', page=export_key) }}">
+      {{ icon('download', 16) }} Export view
+    </a>
+    <a class="btn btn-dark" href="{{ url_for('overview') }}">Back to overview</a>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro chips(options, selected, endpoint, param) %}
+<div class="chips">
+  {% for item in options %}
+  <a href="{{ url_for(endpoint, **{param: item}) }}"
+     class="chip{% if item == selected %} active{% endif %}"
+     {% if item == selected %}aria-current="true"{% endif %}>{{ item }}</a>
+  {% endfor %}
+</div>
+{% endmacro %}
